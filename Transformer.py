@@ -1,9 +1,9 @@
 import torch
 from torch import nn
 import math
-from Encoder import EncoderLayer
-from Decoder import DecoderLayer
-from PositionalEncoding import PositionalEncoding
+from .Encoder import EncoderLayer
+from .Decoder import DecoderLayer
+from .PositionalEncoding import PositionalEncoding
 
 class Transformer(nn.Module):
     def __init__(self, embed_size, num_heads, ff_dim, num_layers, vocab_size):
@@ -15,7 +15,7 @@ class Transformer(nn.Module):
         self.fc = nn.Linear(embed_size, vocab_size)  # No softmax here!
         self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self, x, y):
+    def forward(self, x, y=None):
       x = self.embedding(x)
       x = x+self.positional_encoding(x)
       if y is None:

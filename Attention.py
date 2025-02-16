@@ -12,10 +12,10 @@ class MultiHeadAttention(nn.Module):
         self.embed_size = embed_size
 
 
-        self.Wq = nn.Parameter(torch.randn(embed_size, embed_size))
-        self.Wk = nn.Parameter(torch.randn(embed_size, embed_size))
-        self.Wv = nn.Parameter(torch.randn(embed_size, embed_size))
-        self.Wout = nn.Parameter(torch.randn(embed_size, embed_size))
+        self.Wq = nn.Linear(embed_size, embed_size,bias=False)
+        self.Wk = nn.Linear(embed_size, embed_size,bias=False)
+        self.Wv = nn.Linear(embed_size, embed_size,bias=False)
+        self.Wout = nn.Linear(embed_size, embed_size,bias=False)
 
         self.softmax = nn.Softmax(dim=-1)
         self.norm = nn.LayerNorm(embed_size)
@@ -24,9 +24,9 @@ class MultiHeadAttention(nn.Module):
         batch_size, seq_length, embed_size = x.shape
 
 
-        Q = torch.matmul(x, self.Wq)
-        K = torch.matmul(x, self.Wk)
-        V = torch.matmul(x, self.Wv)
+        Q = self.Wq(x)
+        K = self.Wk(x)
+        V = self.Wv(x)
 
         Q = Q.view(batch_size, seq_length, self.num_heads, self.head_dim).transpose(1, 2)
         K = K.view(batch_size, seq_length, self.num_heads, self.head_dim).transpose(1, 2)
@@ -39,7 +39,7 @@ class MultiHeadAttention(nn.Module):
 
         attention_output = attention_output.transpose(1, 2).contiguous().view(batch_size, seq_length, embed_size)
 
-        attention_output = torch.matmul(attention_output, self.Wout)
+        attention_output = self.Wout(attention_output)
 
         return self.norm(attention_output + x)
 
@@ -49,10 +49,9 @@ class MultiHeadAttention(nn.Module):
         src_len = encoder_output.shape[1]
 
 
-        Q = torch.matmul(x,self.Wq)
-        K = torch.matmul(encoder_output,self.Wk)
-        V = torch.matmul(encoder_output,self.Wv)
-
+        Q = self.Wq(x)
+        K = self.Wk(encoder_output)
+        V = self.Wv(encoder_output)
         Q = Q.view(batch_size, tgt_len, self.num_heads, self.head_dim).transpose(1, 2)
         K = K.view(batch_size, src_len, self.num_heads, self.head_dim).transpose(1, 2)
         V = V.view(batch_size, src_len, self.num_heads, self.head_dim).transpose(1, 2)

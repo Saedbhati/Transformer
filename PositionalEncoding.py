@@ -21,12 +21,6 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        """
-        x: Tensor of shape (batch_size, seq_len, d_model)
-        Returns positional encoding of shape (batch_size, seq_len, d_model)
-        """
-        # Get the sequence length from the input tensor
-        seq_len = x.size(1)
-        # Slice the pre-computed positional encodings to match the input sequence length
-        # and expand the batch dimension to match the input batch size.
-        return self.pe[:, :seq_len].expand(x.size(0), -1, -1) #This line is changed to correctly broadcast the positional embeddings
+       
+        seq_len = x.size(0)
+        return self.pe[:seq_len]

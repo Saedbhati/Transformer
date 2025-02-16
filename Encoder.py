@@ -1,5 +1,5 @@
-from Attention import MultiHeadAttention
-from FeedForward import FeedForward
+from .Attention import MultiHeadAttention
+from .FeedForward import FeedForward
 import torch
 from torch import nn
 
