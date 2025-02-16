@@ -12,7 +12,7 @@ class Transformer(nn.Module):
         self.positional_encoding = PositionalEncoding(embed_size)
         self.encoder_layers = nn.ModuleList([EncoderLayer(embed_size, num_heads, ff_dim) for _ in range(num_layers)])
         self.decoder_layers = nn.ModuleList([DecoderLayer(embed_size, num_heads, ff_dim) for _ in range(num_layers)])
-        self.fc = nn.Linear(embed_size, vocab_size)  # No softmax here!
+        self.fc = nn.Linear(embed_size, vocab_size)
         
 
     def forward(self, x, y=None):
