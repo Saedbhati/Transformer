@@ -13,7 +13,7 @@ class Transformer(nn.Module):
         self.encoder_layers = nn.ModuleList([EncoderLayer(embed_size, num_heads, ff_dim) for _ in range(num_layers)])
         self.decoder_layers = nn.ModuleList([DecoderLayer(embed_size, num_heads, ff_dim) for _ in range(num_layers)])
         self.fc = nn.Linear(embed_size, vocab_size)  # No softmax here!
-        self.softmax = nn.Softmax(dim=-1)
+        
 
     def forward(self, x, y=None):
       x = self.embedding(x)

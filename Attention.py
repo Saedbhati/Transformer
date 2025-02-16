@@ -44,7 +44,7 @@ class MultiHeadAttention(nn.Module):
         return self.norm(attention_output + x)
 
 
-    def cross_attention(self, x, encoder_output, src_mask):
+    def cross_attention(self, x, encoder_output, src_mask=None):
         batch_size, tgt_len, embed_size = x.shape
         src_len = encoder_output.shape[1]
 
@@ -58,7 +58,8 @@ class MultiHeadAttention(nn.Module):
 
         attention_scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.head_dim)
 
-
+        if src_mask is not None:
+            attention_scores = attention_scores.masked_fill(~src_mask, float('-inf'))
 
         attention_scores = self.softmax(attention_scores)
         attention_output = torch.matmul(attention_scores, V)
