@@ -17,4 +17,4 @@ model = Transformer(embed_size=512, num_heads=8, ff_dim=2048, num_layers=num_lay
 
 out = model(src, target)
 
-print(out.shape)
+print(out.shape) # torch.Size([2, 12, 11])
