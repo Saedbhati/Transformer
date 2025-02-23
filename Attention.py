@@ -44,7 +44,7 @@ class MultiHeadAttention(nn.Module):
         return self.norm(attention_output + x)
 
 
-    def cross_attention(self, x, encoder_output, src_mask=None):
+    def cross_attention(self, x, encoder_output):
         batch_size, tgt_len, embed_size = x.shape
         src_len = encoder_output.shape[1]
 
@@ -58,8 +58,7 @@ class MultiHeadAttention(nn.Module):
 
         attention_scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.head_dim)
 
-        if src_mask is not None:
-            attention_scores = attention_scores.masked_fill(~src_mask, float('-inf'))
+    
 
         attention_scores = self.softmax(attention_scores)
         attention_output = torch.matmul(attention_scores, V)
@@ -70,30 +69,50 @@ class MultiHeadAttention(nn.Module):
     
 
 class MaskedSelfAttention(nn.Module):
-    def __init__(self, embed_size):
+    def __init__(self, embed_size, num_heads):
         super(MaskedSelfAttention, self).__init__()
         self.embed_size = embed_size
-
+        self.num_heads = num_heads
+        self.head_dim = embed_size // num_heads
         self.Wq = nn.Linear(embed_size, embed_size)
         self.Wk = nn.Linear(embed_size, embed_size)
         self.Wv = nn.Linear(embed_size, embed_size)
+        self.fc_out = nn.Linear(embed_size, embed_size)
+
         self.softmax = nn.Softmax(dim=-1)
         self.norm = nn.LayerNorm(embed_size)
 
     def forward(self, x, mask=None):
-        q = self.Wq(x)
-        k = self.Wk(x)
-        v = self.Wv(x)
+        N, seq_len, _ = x.shape
+        
+        # Create Q, K, V matrices
+        Q = self.Wq(x)
+        K = self.Wk(x)
+        V = self.Wv(x)
 
-        attention_scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(self.embed_size)
-
-        # Create a default mask if none is provided
-        if mask is None:
-            mask = torch.ones_like(attention_scores, dtype=torch.bool) # create a mask of all True values
-
-        # Apply mask: set masked positions to a very large negative number
-        attention_scores = attention_scores.masked_fill(~mask, float('-inf')) # Invert the mask for masked_fill
-
-        attention_probs = self.softmax(attention_scores)
-        attention_output = torch.matmul(attention_probs, v)
-        return self.norm(attention_output + x)
+        
+        # Reshape into [N, num_heads, seq_len, head_dim]
+        Q = Q.view(N, seq_len, self.num_heads, self.head_dim).transpose(1,2)
+        K = K.view(N, seq_len, self.num_heads, self.head_dim).transpose(1,2)
+        V = V.view(N, seq_len, self.num_heads, self.head_dim).transpose(1,2)
+        
+        # Compute scaled dot-product attention scores
+        energy = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.head_dim)
+        
+        # Generate a causal mask and adjust its dimensions
+        # The mask is True for allowed positions (current and past tokens)
+        mask = torch.tril(torch.ones(seq_len, seq_len, device=x.device)).bool()
+        mask = mask.unsqueeze(0).unsqueeze(0)  # shape becomes [1, 1, seq_len, seq_len]
+        
+        # Apply the mask: set positions that are False in mask to -inf
+        energy = energy.masked_fill(~mask, float('-inf'))
+        print(energy)
+        
+        # Softmax over the last dimension to obtain attention weights
+        attention = torch.softmax(energy, dim=-1)
+        
+        # Compute the final attention output
+        out = torch.matmul(attention, V)
+        out = out.transpose(1,2).contiguous().view(N, seq_len, self.embed_size)
+        out = self.fc_out(out)
+        return self.norm(out + x)

@@ -23,4 +23,4 @@ class PositionalEncoding(nn.Module):
     def forward(self, x):
        
         seq_len = x.size(1)
-        return self.pe[:,:seq_len]
+        return x+self.pe[:,:seq_len]

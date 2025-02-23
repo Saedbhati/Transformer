@@ -17,12 +17,12 @@ class Transformer(nn.Module):
 
     def forward(self, x, y=None):
       x = self.embedding(x)
-      x = x+self.positional_encoding(x)
+      x = self.positional_encoding(x)
       if y is None:
         y=x
       else:
         y = self.embedding(y.type(torch.int64)) # Cast y to LongTensor if it's not None
-        y = y+self.positional_encoding(y)
+        y = self.positional_encoding(y)
 
 
       for layer in self.encoder_layers:
