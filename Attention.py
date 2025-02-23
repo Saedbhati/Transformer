@@ -98,14 +98,10 @@ class MaskedSelfAttention(nn.Module):
         
         # Compute scaled dot-product attention scores
         energy = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.head_dim)
-        
-        # Generate a causal mask and adjust its dimensions
-        # The mask is True for allowed positions (current and past tokens)
+        # Use the actual query length for mask generation
+        seq_len = Q.size(2)  
         mask = torch.tril(torch.ones(seq_len, seq_len, device=x.device)).bool()
-        mask = mask.unsqueeze(0).unsqueeze(0)  # shape becomes [1, 1, seq_len, seq_len]
-        
-        # Apply the mask: set positions that are False in mask to -inf
-        energy = energy.masked_fill(~mask, float('-inf'))
+        mask = mask.unsqueeze(0).unsqueeze(0)  # shape becomes [1,1,seq_len,seq_len]
         
         
         # Softmax over the last dimension to obtain attention weights
