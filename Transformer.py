@@ -18,11 +18,9 @@ class Transformer(nn.Module):
     def forward(self, x, y=None):
       x = self.embedding(x)
       x = self.positional_encoding(x)
-      if y is None:
-        y=x
-      else:
-        y = self.embedding(y.type(torch.int64)) # Cast y to LongTensor if it's not None
-        y = self.positional_encoding(y)
+      
+      y = self.embedding(y.type(torch.int64)) # Cast y to LongTensor if it's not None
+      y = self.positional_encoding(y)
 
 
       for layer in self.encoder_layers:
@@ -36,3 +34,28 @@ class Transformer(nn.Module):
 
 
       return y
+    
+    def generate(self, src, start_token, seq_length, end_token):
+        # Ensure the source has a batch dimension
+        if src.dim() == 1:
+            src = src.unsqueeze(0)  # shape: (1, seq_length)
+        x = self.embedding(src)
+        x = self.positional_encoding(x)
+        for layer in self.encoder_layers:
+            x = layer(x)
+
+        # Start with start_token and add batch dimension
+        output = torch.tensor([[start_token]], dtype=torch.long)  # shape: (1, 1)
+        for i in range(seq_length):
+            y = self.embedding(output)
+            y = self.positional_encoding(y)
+            for layer in self.decoder_layers:
+                y = layer(y, x)
+            y = self.fc(y)
+            # Pick the token with the highest probability from the last time step
+            y_token = y[:, -1].max(dim=1)[1].unsqueeze(1)  # shape: (1, 1)
+            output = torch.cat((output, y_token), dim=1)
+            if y_token.item() == end_token:
+                break
+        # Return output without the start token
+        return output[:, 1:]
