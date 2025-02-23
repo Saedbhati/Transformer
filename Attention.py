@@ -106,7 +106,7 @@ class MaskedSelfAttention(nn.Module):
         
         # Apply the mask: set positions that are False in mask to -inf
         energy = energy.masked_fill(~mask, float('-inf'))
-        print(energy)
+        
         
         # Softmax over the last dimension to obtain attention weights
         attention = torch.softmax(energy, dim=-1)
