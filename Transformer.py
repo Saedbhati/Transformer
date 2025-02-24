@@ -13,6 +13,7 @@ class Transformer(nn.Module):
         self.encoder_layers = nn.ModuleList([EncoderLayer(embed_size, num_heads, ff_dim) for _ in range(num_layers)])
         self.decoder_layers = nn.ModuleList([DecoderLayer(embed_size, num_heads, ff_dim) for _ in range(num_layers)])
         self.fc = nn.Linear(embed_size, vocab_size)
+        self.softmax = nn.Softmax(dim=-1)
         
 
     def forward(self, x, y=None):
@@ -52,10 +53,5 @@ class Transformer(nn.Module):
             for layer in self.decoder_layers:
                 y = layer(y, x)
             y = self.fc(y)
-            # Pick the token with the highest probability from the last time step
-            y_token = y[:, -1].max(dim=1)[1].unsqueeze(1)  # shape: (1, 1)
-            output = torch.cat((output, y_token), dim=1)
-            if y_token.item() == end_token:
-                break
-        # Return output without the start token
-        return output[:, 1:]
+            # y = self.softmax(y)
+        return y
